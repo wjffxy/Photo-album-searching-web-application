@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+<link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+<script type="text/javascript"
+    src="sdk/javascript_2019-12-04_19-46Z/apiGateway-js-sdk/lib/axios/dist/axios.standalone.js"></script>
+<script type="text/javascript"
+    src="sdk/javascript_2019-12-04_19-46Z/apiGateway-js-sdk/lib/CryptoJS/rollups/hmac-sha256.js"></script>
+<script type="text/javascript"
+    src="sdk/javascript_2019-12-04_19-46Z/apiGateway-js-sdk/lib/CryptoJS/rollups/sha256.js"></script>
+<script type="text/javascript"
+    src="sdk/javascript_2019-12-04_19-46Z/apiGateway-js-sdk/lib/CryptoJS/components/hmac.js"></script>
+<script type="text/javascript"
+    src="sdk/javascript_2019-12-04_19-46Z/apiGateway-js-sdk/lib/CryptoJS/components/enc-base64.js"></script>
+<script type="text/javascript"
+    src="sdk/javascript_2019-12-04_19-46Z/apiGateway-js-sdk/lib/url-template/url-template.js"></script>
+<script type="text/javascript"
+    src="sdk/javascript_2019-12-04_19-46Z/apiGateway-js-sdk/lib/apiGatewayCore/sigV4Client.js"></script>
+<script type="text/javascript"
+    src="sdk/javascript_2019-12-04_19-46Z/apiGateway-js-sdk/lib/apiGatewayCore/apiGatewayClient.js"></script>
+<script type="text/javascript"
+    src="sdk/javascript_2019-12-04_19-46Z/apiGateway-js-sdk/lib/apiGatewayCore/simpleHttpClient.js"></script>
+<script type="text/javascript"
+    src="sdk/javascript_2019-12-04_19-46Z/apiGateway-js-sdk/lib/apiGatewayCore/utils.js"></script>
+<script type="text/javascript" src="sdk/javascript_2019-12-04_19-46Z/apiGateway-js-sdk/apigClient.js"></script>
+<script src="https://sdk.amazonaws.com/js/aws-sdk-2.283.1.min.js"></script>
+<script src="sdk/recorder.mp3.min.js"></script>
+<style>
+    [hidden] {
+        display: none;
+    }
+
+    body {
+        background-color: #ecf0f1;
+    }
+
+    .navbar-default {
+        max-height: 40px;
+        background-color: #2980b9 !important;
+        border-color: #2980b9;
+        color: #ecf0f1;
+    }
+
+    .navbar-right {
+        float: right;
+    }
+
+    .navbar-default .navbar-brand {
+        color: #ecf0f1 !important;
+    }
+
+    .navbar-default .navbar-nav>li>a {
+        color: #ecf0f1 !important;
+    }
+
+    .col-xs-6 {
+        float: none !important;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .center-block {
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+        margin-top: 200px;
+        margin-bottom: 20px;
+    }
+
+    .btn-group-wrap {
+        text-align: center;
+        margin-top: 30px;
+    }
+
+    div.btn-group {
+        margin: 0 auto;
+        text-align: center;
+        width: inherit;
+        display: inline-block;
+        padding-right: 5px;
+        padding-left: 5px;
+    }
+
+    .btn-primary {
+        color: #ecf0f1 !important;
+        background-color: #2980b9 !important;
+        border-color: #2980b9 !important;
+    }
+</style>
+
+<body>
+    <div class="container">
+        <div class="row">
+            <div class="span4"></div>
+            <div class="span4"><img class="center-block" src="festisite_google.png" width="" height="95" alt="Google"
+                    id="logo"></div>
+            <div class="span4"></div>
+        </div>
+
+        <div class="row">
+            <div class="col-xs-6">
+                <div class="input-group InputInfoDiv">
+                    <form>
+                        <input type="text" class="form-control textInput" id="textInput">
+                    </form>
+                    <span class="input-group-btn">
+                        <button class="btn btn-primary" id="microphone-button" type="button" style="display: block;"><i
+                                class="fa fa-microphone"></i></button>
+                        <button class="btn btn-primary" id="stop-button" type="button"
+                            style="display:none; background-color: red;"><i
+                                class="fa fa-microphone-alt-slash"></i>"></i></button>
+                        <p hidden>
+                            <audio id=recordedAudio></audio>
+
+                        </p>
+                    </span>
+                </div>
+            </div>
+        </div>
+        <div class="btn-group-wrap">
+            <div class="btn-group">
+                <button type="button" class="btn btn-primary" id="google-search">Let's Search</button>
+            </div>
+            <div class="btn-group">
+                <div hidden>
+                    <input type="file" accept="image/*" id="upload-photo-input" />
+                </div>
+                <button type="button" class="btn btn-primary" id="upload-photo-button">Upload Photo</button>
+            </div>
+        </div>
+
+
+    </div>
+
+    <div class="imageDiv" id="imageDiv">
+    </div>
+
+
+</body>
+
+
+<script>
+
+    var apigClient = null;
+    apigClient = apigClientFactory.newClient();
+    AWS.config.region = 'us-east-1';
+
+
+    const toBase64 = file => new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = error => reject(error);
+    });
+
+
+
+
+    document.getElementById("google-search").addEventListener('click', function () {
+        var inputText = $("#textInput").val();
+        var params = {
+            "q": inputText
+        };
+        var body = {};
+        var additionalParams = {};
+        apigClient.searchGet(params)
+            .then((result) => {
+                console.log(result);
+                var outputArea = $("#imageDiv");
+                console.log(result.data.body);
+                for (item in result.data.body) {
+                    console.log(result.data.body[item]);
+                    outputArea.append(`
+                        <img src="${result.data.body[item]}" />
+                        `);
+                }
+            });
+    });
+
+    document.getElementById("upload-photo-button").addEventListener('click', function () {
+        document.getElementById("upload-photo-input").click();
+    });
+
+    var pullfiles = function () {
+        // love the query selector
+        var fileInput = document.querySelector("#upload-photo-input");
+        var files = fileInput.files;
+        var file = files[0];
+        toBase64(file)
+            .then((result) => {
+                var data = result.split(",")[1];
+                var params = {
+                    "Content-Type": "image/jpeg",
+                    "ItemName": file.name,
+                    "bucketName": "assignment3b2"
+                };
+                var body = data;
+                apigClient.uploadBucketNameItemNamePut(params, body, {})
+                    .then((result) => {
+                        console.log(result);
+                    });
+            });
+    }
+
+    document.querySelector("#upload-photo-input").onchange = pullfiles;
+
+    function sendData(data) {
+        console.log(data.type);
+        toBase64(data)
+            .then((result) => {
+                var base64 = result.split(",")[1];
+                var param = {
+                    "Content-Type": data.type,
+                    "ItemName": "test.mp3",
+                    "bucketName": "cc3-voices-a"
+                };
+                var body = base64;
+                apigClient.uploadBucketNameItemNamePut(param, body, {})
+                    .then((result) => {
+                        var query = "voiceSearch";
+                        params = {
+                            q: query
+                        };
+                        apigClient.searchGet(params, {}, {})
+                            .then((result) => {
+                                console.log(result);
+                            }).catch(function (result) {
+                                //This is where you would put an error callback
+                            });
+                    });
+            });
+
+
+        //         <div class="imageDiv" id="imageDiv">
+        //     <img id="image" class="image" src="" width="500" height="500"/>
+        // </div>
+
+        setTimeout(function () {
+            params = { q: "voiceResult" };
+            apigClient.searchGet(params, {}, {})
+                .then((result) => {
+                    console.log(result);
+                    var outputArea = $("#imageDiv");
+                    console.log(result.data.body);
+                    for (item in result.data.body) {
+                        console.log(result.data.body[item]);
+                        outputArea.append(`
+                        <img src="${result.data.body[item]}" />
+                        `);
+                    }
+                });
+        }, 120000);
+
+    }
+
+    var rec = Recorder({
+        bitRate: 32,
+        sampleRate: 24000
+    });
+
+    record = document.getElementById("microphone-button");
+    stop_record = document.getElementById("stop-button");
+
+
+    record.onclick = e => {
+        console.log('I was clicked')
+        record.style.display = "none";
+        stop_record.style.display = "block";
+        stop_record.style.backgroundColor = "red";
+        rec.open(function () {
+            rec.start();
+        }, function (msg, isUserNotAllow) {
+            console.log((isUserNotAllow ? "UserNotAllow，" : "") + "can't record:" + msg);
+        });
+    }
+    stop_record.onclick = e => {
+        console.log("I was clicked")
+        record.style.display = "block";
+        stop_record.style.display = "none";
+        rec.stop(function (blob, duration) {
+            console.log(URL.createObjectURL(blob), "Duration:" + duration + "ms");
+            console.log(blob);
+            rec.close();
+            var audio = document.createElement("audio");
+            audio.controls = true;
+            document.body.appendChild(audio);
+            audio.src = URL.createObjectURL(blob);
+            // audio.play();
+            sendData(blob);
+        });
+    }
+
+</script>
+
+</html>
